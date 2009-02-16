@@ -1,0 +1,26 @@
+---
+abstract: ~
+author:
+  - 'FUJIWARA <fujiwara.shunichiro gmail.com>'
+build_requires:
+  Test::More: 0
+distribution_type: module
+generated_by: 'Module::Install version 0.77'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: DBIx-CouchLike
+no_index:
+  directory:
+    - inc
+    - t
+requires:
+  Class::Accessor::Fast: 0
+  DBI: 1
+  Filter::Util::Call: 0
+  JSON: 2
+  UNIVERSAL::require: 0
+resources:
+  license: http://dev.perl.org/licenses/
+version: 0.01
