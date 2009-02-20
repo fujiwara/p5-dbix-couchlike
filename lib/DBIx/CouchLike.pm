@@ -298,6 +298,8 @@ sub update_views {
     my $data_val = shift;
     my $dbh      = $self->dbh;
 
+    $data_val->{_id} = $id if !defined $data_val->{_id};
+
     return $self->create_view( $id, $data_val )
         if $id =~ qr{^_design/};
 
