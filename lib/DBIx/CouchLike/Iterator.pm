@@ -44,7 +44,7 @@ sub all {
     else {
         push @res, $_ while $_ = $self->_next();
     }
-    return wantarray ? @res : \@res;
+    return @res;
 }
 
 sub _next_reduce {

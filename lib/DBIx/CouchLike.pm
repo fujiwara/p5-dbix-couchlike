@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -199,7 +199,13 @@ sub view {
     else {
         $sql =~ s{(?:_COL_|_JOIN_)}{}g;
     }
-    $sql .= " ORDER BY m.key, m.id, m.value ";
+
+    $sql .= sprintf(
+        " ORDER BY m.key %s, m.value %s, m.id ",
+        $query->{key_reverse}   ? "DESC" : "",
+        $query->{value_reverse} ? "DESC" : "",
+    );
+
     $sql = $self->_offset_limit_sql( $sql, $query, \@param );
 
     my $sth = $self->prepare_sql($sql);

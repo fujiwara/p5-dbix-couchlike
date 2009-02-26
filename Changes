@@ -1,4 +1,7 @@
 Revision history for Perl extension DBIx::CouchLike
 
+0.02    Thu Feb 26 21:17:50 2009
+        - add view query option: key_reverse, value_reverse
+
 0.01    Thu Feb  5 20:45:46 2009
         - original version
