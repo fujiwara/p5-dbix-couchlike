@@ -57,6 +57,31 @@ is_deeply \@res => [
     { key => "dog",  value => "animal",       id => $a_id },
 ];
 
+@res = $couch->view("tags/name", { key => {"<>" => "dog"} });
+is_deeply \@res => [
+    { key => "cat",  value => "animal",       id => $a_id },
+    { key => "cat",  value => "unix command", id => $u_id },
+    { key => "less", value => "unix command", id => $u_id },
+    { key => "more", value => "unix command", id => $u_id },
+];
+
+@res = $couch->view("tags/name", { key => {">" => "dog"} });
+is_deeply \@res => [
+    { key => "less", value => "unix command", id => $u_id },
+    { key => "more", value => "unix command", id => $u_id },
+];
+
+@res = $couch->view("tags/name", { key => ["dog", "cat"] });
+is_deeply \@res => [
+    { key => "cat",  value => "animal",       id => $a_id },
+    { key => "cat",  value => "unix command", id => $u_id },
+    { key => "dog",  value => "animal",       id => $a_id },
+];
+
+@res = $couch->view("tags/name", { key => \"> 'less'" });
+is_deeply \@res => [
+    { key => "more", value => "unix command", id => $u_id },
+];
 
 @res = $couch->view("tags/name", { key => "cat", limit => 1 });
 is_deeply \@res => [

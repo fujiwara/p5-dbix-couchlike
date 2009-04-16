@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -184,8 +184,24 @@ sub view {
         FROM _MAP_ AS m _JOIN_
         WHERE m.design_id=? };
     if ( exists $query->{key} ) {
-        $sql .= q{ AND m.key=? };
-        push @param, $query->{key};
+        if ( ref $query->{key} eq 'ARRAY' ) {
+            $sql .= " AND m.key IN ("
+                 . join(",", map { "?" } @{ $query->{key} })
+                 . ")";
+            push @param, @{ $query->{key} };
+        }
+        elsif ( ref $query->{key} eq 'HASH' ) {
+            my %k = %{ $query->{key} };
+            $sql .= sprintf " AND m.key %s ? ", (keys %k)[0];
+            push @param, (values %k)[0];
+        }
+        elsif ( ref $query->{key} eq 'SCALAR' ) {
+            $sql .= sprintf " AND m.key %s", ${ $query->{key} };
+        }
+        else {
+            $sql .= q{ AND m.key=? };
+            push @param, $query->{key};
+        }
     }
     elsif ( exists $query->{key_like} ) {
         $sql .= q{ AND m.key LIKE ? };
@@ -442,8 +458,8 @@ DBIx::CouchLike -
   });
   # get VIEW
   @result = $couch->view("find/tags");
-  # is_deeply \@result => [ { key => "dog", value => 1 },
-  #                         { key => "cat", value => 1 },
+  # is_deeply \@result => [ { key => "dog", value => "animal" },
+  #                         { key => "cat", value => "animal" },
   #                       ]
   
   @result = $couch->view("find/tags", { key => "cat" });

@@ -1,5 +1,8 @@
 Revision history for Perl extension DBIx::CouchLike
 
+0.03    Thu Apr 16 15:10:16 2009
+        - add view query syntax: key => HASHREF, key => ARRAYREF, key => SCALARREF
+
 0.02    Thu Feb 26 21:17:50 2009
         - add view query option: key_reverse, value_reverse
 
