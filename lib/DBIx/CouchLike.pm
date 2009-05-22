@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -231,6 +231,27 @@ sub view {
         sth    => $sth,
         query  => $query,
         reduce => $design->{views}->{$name}->{reduce},
+        couch  => $self,
+    });
+    return wantarray ? $itr->all()
+                     : $itr;
+}
+
+sub all {
+    my $self  = shift;
+    my $query = shift || {};
+
+    my @param;
+    my $sql = q{SELECT id, NULL, value FROM _DATA_ ORDER BY id};
+    $sql .= " DESC" if $query->{reverse};
+
+    $sql = $self->_offset_limit_sql( $sql, $query, \@param );
+    my $sth = $self->prepare_sql($sql);
+    $sth->execute(@param);
+
+    my $itr = DBIx::CouchLike::Iterator->new({
+        sth    => $sth,
+        query  => $query,
         couch  => $self,
     });
     return wantarray ? $itr->all()

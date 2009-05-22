@@ -26,6 +26,8 @@ sub _next {
         $res->{document} = $couch->from_json($r->[3]);
         $res->{document}->{_id} = $r->[0];
     }
+    delete $res->{key} unless defined $res->{key};
+
     return $res;
 }
 
