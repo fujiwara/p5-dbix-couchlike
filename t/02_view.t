@@ -15,21 +15,48 @@ ok $couch->create_table;
 
 my $a_id = $couch->post( 1 => { tags => ['dog', 'cat'], name => 'animal' });
 my $u_id = $couch->post( 2 => { tags => ['cat', 'more', 'less'], name => 'unix command' });
-ok $couch->post("_design/tags" => {
-    language => 'perl',
-    views => {
-        name => {
-            map => q|
+my $func = q|
 sub {
     my ($obj, $emit) = @_;
     for my $tag ( @{ $obj->{tags} } ) {
         $emit->( $tag, $obj->{name} );
     }
 }
-            |,
-        }
+|;
+ok $couch->post("_design/tags" => {
+    language => 'perl',
+    views => {
+        name => { map => $func, }
     }
 });
+my @all = $couch->all();
+is_deeply \@all => [
+    { id => 1, value => { tags => ['dog', 'cat'], name => 'animal' } },
+    { id => 2, value => { tags => ['cat', 'more', 'less'], name => 'unix command' } },
+    { id => "_design/tags", value => {
+        language => 'perl',
+        views => {
+            name => { map => $func, }
+        }
+    }},
+];
+
+@all = $couch->all({ exclude_designs => 1 });
+is_deeply \@all => [
+    { id => 1, value => { tags => ['dog', 'cat'], name => 'animal' } },
+    { id => 2, value => { tags => ['cat', 'more', 'less'], name => 'unix command' } },
+];
+
+@all = $couch->all_designs();
+is_deeply \@all => [
+    { id => "_design/tags", value => {
+        language => 'perl',
+        views => {
+            name => { map => $func, }
+        }
+    }},
+];
+
 
 my @res = $couch->view("tags/name");
 is_deeply \@res => [

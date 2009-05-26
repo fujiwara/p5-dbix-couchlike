@@ -60,6 +60,28 @@ is $id => 1234;
 $obj = $couch->get(1234);
 is_deeply $obj => { _id => 1234, foo => 9999 };
 
+my @all = $couch->all;
+is_deeply \@all => [
+    { 'value' => { 'foo' => 9999 }, 'id' => '1234' },
+    { 'value' => { 'bar' => 2, 'foo' => 1 }, 'id' => '9999' },
+    { 'value' => { 'a' => 'AAA' }, id => 'foo' },
+];
+
+@all = $couch->all({ limit => 1 });
+is_deeply \@all => [
+    { 'value' => { 'foo' => 9999 }, 'id' => '1234' },
+];
+
+@all = $couch->all({ offset => 1, limit => 1 });
+is_deeply \@all => [
+    { 'value' => { 'bar' => 2, 'foo' => 1 }, 'id' => '9999' },
+];
+
+@all = $couch->all({ id_like => "1%" });
+is_deeply \@all => [
+    { 'value' => { 'foo' => 9999 }, 'id' => '1234' },
+];
+
 
 $dbh->commit unless $ENV{DSN};
 $dbh->disconnect;

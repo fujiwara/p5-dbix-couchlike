@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -237,12 +237,27 @@ sub view {
                      : $itr;
 }
 
+sub all_designs {
+    my $self  = shift;
+    my $query = shift || {};
+    $query->{id_like} = "_design/%";
+    $self->all($query);
+}
+
 sub all {
     my $self  = shift;
     my $query = shift || {};
 
     my @param;
-    my $sql = q{SELECT id, NULL, value FROM _DATA_ ORDER BY id};
+    my $sql = q{SELECT id, NULL, value FROM _DATA_};
+    if ($query->{exclude_designs}) {
+        $sql .= " WHERE id NOT LIKE '_design/%'";
+    }
+    elsif ($query->{id_like}) {
+        $sql .= " WHERE id LIKE ?";
+        push @param, $query->{id_like};
+    }
+    $sql .= " ORDER BY id";
     $sql .= " DESC" if $query->{reverse};
 
     $sql = $self->_offset_limit_sql( $sql, $query, \@param );
@@ -447,6 +462,10 @@ DBIx::CouchLike -
   # DELETE
   $couch->delte($id);
 
+  # RETRIEVE all
+  @all     = $couch->all();
+  @grep    = $couch->all({ id_like => "foo%" });
+  @designs = $couch->all_designs();
 
   # define VIEW
   $map_sub_str = <<'END_OF_CODE';
