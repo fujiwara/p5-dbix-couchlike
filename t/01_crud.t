@@ -82,6 +82,12 @@ is_deeply \@all => [
     { 'value' => { 'foo' => 9999 }, 'id' => '1234' },
 ];
 
+@all = $couch->all({ id_in => ["1234", "foo"]});
+is_deeply \@all => [
+    { 'value' => { 'foo' => 9999 }, 'id' => '1234' },
+    { 'value' => { 'a' => 'AAA' }, id => 'foo' },
+];
+
 
 $dbh->commit unless $ENV{DSN};
 $dbh->disconnect;

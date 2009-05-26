@@ -250,13 +250,19 @@ sub all {
 
     my @param;
     my $sql = q{SELECT id, NULL, value FROM _DATA_};
-    if ($query->{exclude_designs}) {
-        $sql .= " WHERE id NOT LIKE '_design/%'";
-    }
-    elsif ($query->{id_like}) {
+    if ($query->{id_like}) {
         $sql .= " WHERE id LIKE ?";
         push @param, $query->{id_like};
     }
+    elsif ($query->{id_in}) {
+        my @id = @{ $query->{id_in} };
+        $sql .= " WHERE id IN (" . join(",", map { "?" } @id) . ")";
+        push @param, @id;
+    }
+    elsif ($query->{exclude_designs}) {
+        $sql .= " WHERE id NOT LIKE '_design/%'";
+    }
+
     $sql .= " ORDER BY id";
     $sql .= " DESC" if $query->{reverse};
 
