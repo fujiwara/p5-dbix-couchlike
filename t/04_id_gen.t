@@ -11,6 +11,7 @@ ok $gen->can('get_id');
 my %id;
 for ( 1 .. 10000 ) {
     my $new = $gen->get_id;
-    ok !$id{$new};
+    ok $new, "get_id";
+    ok !$id{$new}, "got_id is not exists";
     $id{$new} = 1;
 }

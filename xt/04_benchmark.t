@@ -13,6 +13,7 @@ ok $couch->create_table;
 
 my $n = 0;
 my @id;
+
 select STDERR;
 timethese( 2000, {
     post => sub {
@@ -75,7 +76,7 @@ timethese( 0, {
 });
 
 $design->{views}->{by_tail_of_id}->{reduce} = $reduce;
-$couch->post($design);
+$couch->put($design);
 
 timethese( 0, {
     map_reduce => sub {
