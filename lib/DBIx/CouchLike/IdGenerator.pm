@@ -84,7 +84,7 @@ sub get_id {
     return if( $self->{ ids }->{ $key } >= $self->{ max_id } );
 
     $self->{ ids }->{ $key } += SERIAL_INCREMENT;
-    return $self->{ ids }->{ $key };
+    return $self->{ ids }->{ $key } . "";
 }
 
 
