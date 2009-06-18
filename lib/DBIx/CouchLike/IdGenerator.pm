@@ -78,13 +78,13 @@ sub get_id {
 
     if( !exists $self->{ ids }->{ $key } ) {
         $self->{ ids }->{ $key } = $self->{ min_id };
-        return $self->{ ids }->{ $key };
+        return $self->{ ids }->{ $key }->bstr;
     }
 
     return if( $self->{ ids }->{ $key } >= $self->{ max_id } );
 
     $self->{ ids }->{ $key } += SERIAL_INCREMENT;
-    return $self->{ ids }->{ $key } . "";
+    return $self->{ ids }->{ $key }->bstr;
 }
 
 

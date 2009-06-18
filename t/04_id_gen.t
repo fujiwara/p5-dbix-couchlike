@@ -12,6 +12,7 @@ my %id;
 for ( 1 .. 10000 ) {
     my $new = $gen->get_id;
     ok $new, "get_id";
+    ok !ref $new, "no ref";
     ok !$id{$new}, "got_id is not exists";
     $id{$new} = 1;
 }
