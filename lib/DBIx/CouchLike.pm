@@ -525,6 +525,25 @@ DBIx::CouchLike -
 
 DBIx::CouchLike is DBI based CouchDB like document database library.
 
+=head1 METHODS
+
+=over4
+
+=item view
+
+ $itr = $couch->view( $view_name, \%options );
+
+ options:
+ key           => "foo",             # key = "foo"
+ key           => ["foo", "bar"],    # key = "foo" OR key = "bar"
+ key           => { "<" => "10" },   # key < 10
+ key_like      => "foo%",            # key LIKE "foo%"
+ key_reverse   => 1,                 # ORDER BY key DESC
+ value_reverse => 1,                 # ORDER BY value DESC
+ include_docs  => 1,                 # return original document with key, value pair (map only)
+
+=back
+
 =head1 AUTHOR
 
 FUJIWARA E<lt>fujiwara.shunichiro gmail.comE<gt>
