@@ -70,6 +70,9 @@ timethese( 0, {
     map_key_like => sub {
         my $r = $couch->view('count/by_tail_of_id', { key_like => "12%" });
     },
+    map_key_sw => sub {
+        my $r = $couch->view('count/by_tail_of_id', { key_start_with => "12" });
+    },
     map_key_docs => sub {
         my $r = $couch->view('count/by_tail_of_id', { key => "12", include_docs => 1, });
     },

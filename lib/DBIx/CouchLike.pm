@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -207,6 +207,12 @@ sub view {
     elsif ( exists $query->{key_like} ) {
         $sql .= q{ AND m.key LIKE ? };
         push @param, $query->{key_like};
+    }
+    elsif ( exists $query->{key_start_with} ) {
+        my ($part, @value)
+            = $self->_start_with("m.key" => $query->{key_start_with});
+        $sql .= q{ AND } . $part;
+        push @param, @value;
     }
 
     if ( $query->{include_docs} ) {
