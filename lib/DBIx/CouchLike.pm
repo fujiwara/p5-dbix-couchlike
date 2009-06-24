@@ -273,6 +273,12 @@ sub all {
         $sql .= " WHERE id LIKE ?";
         push @param, $query->{id_like};
     }
+    elsif ($query->{id_start_with}) {
+        my ($part, @value)
+            = $self->_start_with( id => $query->{id_start_with} );
+        $sql .= " WHERE $part";
+        push @param, @value;
+    }
     elsif ($query->{id_in}) {
         my @id = @{ $query->{id_in} };
         $sql .= " WHERE id IN (" . join(",", map { "?" } @id) . ")";
@@ -557,7 +563,7 @@ DBIx::CouchLike is DBI based CouchDB like document database library.
 
 =head1 METHODS
 
-=over4
+=over 4
 
 =item view
 

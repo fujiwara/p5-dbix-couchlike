@@ -5,7 +5,10 @@ use Test::Exception;
 use Benchmark qw/ :all /;
 BEGIN {
     use_ok 'DBIx::CouchLike::IdGenerator';
-    use_ok 'Data::YUID::Generator';
+    eval { require Data::YUID::Generator };
+    if ($@) {
+        exit
+    }
 }
 
 my $yuid  = Data::YUID::Generator->new;
