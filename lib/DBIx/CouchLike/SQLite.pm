@@ -6,7 +6,7 @@ use base qw/ DBIx::CouchLike /;
 
 my @sql_format = (
     q|CREATE TABLE IF NOT EXISTS %s_data (id text not null primary key, value text)|,
-    q|CREATE TABLE IF NOT EXISTS %s_map (design_id text not null, id text not null, key text not null, value text )|,
+    q|CREATE TABLE IF NOT EXISTS %s_map (design_id text not null, id text not null, key text not null, value text)|,
     q|CREATE INDEX %s_map_idx  ON %s_map (design_id, key)|,
 );
 
@@ -17,6 +17,16 @@ sub create_table {
     for my $f (@sql_format) {
         $dbh->do( sprintf $f, $name, $name );
     }
+}
+
+sub _start_with {
+    my ( $self, $key, $value ) = @_;
+    my $tail = substr($value, -1, 1);
+    $tail = chr( ord($tail) + 1 );
+    my $next_value = $value;
+    $next_value =~ s/.\z/$tail/;
+
+    return ( " ($key >= ? AND $key < ?)", $value, $next_value );
 }
 
 sub _offset_limit_sql {

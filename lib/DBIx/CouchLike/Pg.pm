@@ -19,6 +19,11 @@ sub create_table {
     }
 }
 
+sub _start_with {
+    my ( $self, $value ) = @_;
+    return ( " ~ ? ", "^" . $value );
+}
+
 sub _offset_limit_sql {
     my ( $self, $sql, $query, $param ) = @_;
 

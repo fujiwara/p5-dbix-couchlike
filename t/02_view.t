@@ -30,6 +30,7 @@ ok $couch->post("_design/tags" => {
     }
 });
 my @all = $couch->all();
+
 is_deeply \@all => [
     { id => 1, value => { tags => ['dog', 'cat'], name => 'animal' } },
     { id => 2, value => { tags => ['cat', 'more', 'less'], name => 'unix command' } },

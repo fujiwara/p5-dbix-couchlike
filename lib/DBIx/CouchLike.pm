@@ -152,10 +152,11 @@ sub delete {
     my $res  = $sth->execute($id);
 
     if ( $id =~ qr{^_design/} ) {
+        my ($part, @value) = $self->_start_with( design_id => $id );
         my $del_sth = $self->prepare_sql(
-            q{DELETE FROM _MAP_ WHERE design_id LIKE ?}
+            q{DELETE FROM _MAP_ WHERE } . $part
         );
-        $del_sth->execute($id. "%");
+        $del_sth->execute(@value);
     }
     else {
         my $del_sth = $self->prepare_sql(
@@ -239,9 +240,21 @@ sub view {
 
 sub all_designs {
     my $self  = shift;
-    my $query = shift || {};
-    $query->{id_like} = "_design/%";
-    $self->all($query);
+
+    my $sql = "SELECT id, NULL, value FROM _DATA_ WHERE ";
+    my ($part, @value) = $self->_start_with( id => "_design/" );
+    $sql .= $part . " ORDER BY id";
+
+    my $sth = $self->prepare_sql($sql);
+    $sth->execute(@value);
+
+    my $itr = DBIx::CouchLike::Iterator->new({
+        sth    => $sth,
+        query  => {},
+        couch  => $self,
+    });
+    return wantarray ? $itr->all()
+                     : $itr;
 }
 
 sub all {
@@ -260,7 +273,9 @@ sub all {
         push @param, @id;
     }
     elsif ($query->{exclude_designs}) {
-        $sql .= " WHERE id NOT LIKE '_design/%'";
+        my ($part, @value) = $self->_start_with( id => "_design/" );
+        $sql .= " WHERE NOT $part";
+        push @param, @value;
     }
 
     $sql .= " ORDER BY id";
@@ -277,6 +292,13 @@ sub all {
     });
     return wantarray ? $itr->all()
                      : $itr;
+}
+
+sub _start_with {
+    my $self  = shift;
+    my $sub_class = $self->sub_class;
+    $sub_class->require;
+    $sub_class->_start_with(@_);
 }
 
 sub _offset_limit_sql {
@@ -323,10 +345,11 @@ sub create_view {
     my $design_val = shift;
     my $dbh        = $self->dbh;
 
+    my ($part, @value) = $self->_start_with( design_id => $design_id );
     my $del_sth = $self->prepare_sql(
-        q{DELETE FROM _MAP_ WHERE design_id LIKE ?}
+        q{DELETE FROM _MAP_ WHERE } . $part
     );
-    $del_sth->execute($design_id . "%");
+    $del_sth->execute(@value);
 
     my $views = $design_val->{views} or return 1;
     my $index_sth = $self->prepare_sql(
@@ -376,10 +399,11 @@ sub update_views {
         q{INSERT INTO _MAP_ (design_id, id, key, value) VALUES (?,?,?,?)}
     );
 
+    my ($part, @value) = $self->_start_with( id => '_design/' );
     my $sth = $self->prepare_sql(
-        q{SELECT id, value FROM _DATA_ WHERE id LIKE '_design/%' }
+        q{SELECT id, value FROM _DATA_ WHERE } . $part
     );
-    $sth->execute();
+    $sth->execute(@value);
 
  DESIGN:
     while ( my $r = $sth->fetchrow_arrayref ) {
