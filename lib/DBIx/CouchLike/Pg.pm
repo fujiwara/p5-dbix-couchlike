@@ -20,8 +20,8 @@ sub create_table {
 }
 
 sub _start_with {
-    my ( $self, $value ) = @_;
-    return ( " ~ ? ", "^" . $value );
+    my ( $self, $key, $value ) = @_;
+    return ( " $key ~ ? ", "^" . $value );
 }
 
 sub _offset_limit_sql {
