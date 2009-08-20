@@ -30,4 +30,9 @@ t/07_no_utf8.t
 t/08_view_itr.t
 t/09_reduce.t
 t/10_combined.t
+t/11_combined.t
+t/12_reverse.t
+t/13_all.t
+t/14_crud_multi.t
+t/15_view_multi.t
 t/connect.pl

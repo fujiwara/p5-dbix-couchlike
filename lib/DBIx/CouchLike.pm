@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -107,16 +107,24 @@ sub prepare_sql {
 sub get {
     my $self = shift;
     my $id   = shift;
+    $self->get_multi($id);
+}
 
-    my $sth  = $self->prepare_sql(q{SELECT value FROM _DATA_ WHERE id=?});
-    $sth->execute($id);
-    my $r = $sth->fetchrow_arrayref;
-    $sth->finish;
-    return unless $r;
-
-    my $res = $self->from_json($r->[0]);
-    $res->{_id} = $id;
-    return $res;
+sub get_multi {
+    my $self = shift;
+    my @id   = @_;
+    my $pf   = join(",", map {"?"} @id);
+    my $sth  = $self->prepare_sql(
+        qq{SELECT id, value FROM _DATA_ WHERE id IN($pf)}
+    );
+    $sth->execute(@id);
+    my @res;
+    while ( my $r = $sth->fetchrow_arrayref ) {
+        my $res = $self->from_json($r->[1]);
+        $res->{_id} = $r->[0];
+        push @res, $res;
+    }
+    return wantarray ? @res : $res[0];
 }
 
 sub post {
@@ -124,11 +132,24 @@ sub post {
     my ( $id, $value_ref )
         = ref $_[0] ? ( delete $_[0]->{_id} || $self->id_generator->get_id, $_[0] )
                     : ( $_[0], $_[1] );
+    $value_ref->{_id} = $id;
+    $self->post_multi($value_ref);
+}
+
+sub post_multi {
+    my $self      = shift;
+    my @value_ref = @_;
     my $sth = $self->prepare_sql(q{INSERT INTO _DATA_ (id, value) VALUES(?, ?)});
-    my $json = $self->to_json($value_ref);
-    $sth->execute( $id, $json )
-        && $self->update_views( $id, $value_ref );
-    return $id;
+    my @id;
+    for my $value_ref (@value_ref) {
+        my $id = delete($value_ref->{_id}) || $self->id_generator->get_id;
+        my $json = $self->to_json($value_ref);
+        $sth->execute( $id, $json );
+        $value_ref->{_id} = $id;
+        push @id, $id;
+    }
+    $self->update_views( @value_ref );
+    return wantarray ? @id : $id[0];
 }
 
 sub put {
@@ -136,13 +157,36 @@ sub put {
     my ( $id, $value_ref )
         = ref $_[0] ? ( delete $_[0]->{_id}, $_[0] )
                     : ( $_[0], $_[1] );
+    $value_ref->{_id} = $id;
+    $self->put_multi($value_ref);
+}
+
+sub put_multi {
+    my $self = shift;
+    my @value_ref = @_;
     my $sth  = $self->prepare_sql(q{UPDATE _DATA_ SET value=? WHERE id=?});
-    my $json = $self->to_json($value_ref);
-    my $r    = $sth->execute( $json, $id );
-    if ( $r == 0 ) {
-        return $self->post( $id, $value_ref );
+
+    my @post;
+    my @put;
+    my @id;
+    for my $value_ref (@value_ref) {
+        my $id   = delete $value_ref->{_id};
+        my $json = $self->to_json($value_ref);
+        $value_ref->{_id} = $id;
+
+        my $r = $sth->execute( $json, $id );
+        if ( $r == 0 ) {
+            push @post, $value_ref;
+        }
+        else {
+            push @id,  $id;
+            push @put, $value_ref;
+        }
     }
-    return $self->update_views( $id, $value_ref );
+    my @new_id;
+    @new_id = $self->post_multi(@post) if @post;
+    $self->update_views(@put);
+    return wantarray ? (@id, @new_id) : $id[0] || $new_id[0];
 }
 
 sub delete {
@@ -353,15 +397,17 @@ sub _select_all {
 
 sub create_view {
     my $self       = shift;
-    my $design_id  = shift;
     my $design_val = shift;
     my $dbh        = $self->dbh;
+
+    my $design_id  = delete $design_val->{_id};
 
     my ($part, @value) = $self->_start_with( design_id => $design_id );
     my $del_sth = $self->prepare_sql(
         q{DELETE FROM _MAP_ WHERE } . $part
     );
     $del_sth->execute(@value);
+    $design_val->{_id} = $design_id;
 
     my $views = $design_val->{views} or return 1;
     my $index_sth = $self->prepare_sql(
@@ -393,19 +439,26 @@ sub create_view {
 
 sub update_views {
     my $self     = shift;
-    my $id       = shift;
-    my $data_val = shift;
     my $dbh      = $self->dbh;
 
-    $data_val->{_id} = $id if !defined $data_val->{_id};
+    my @data_val;
+    my @id;
+    for my $data_val (@_) {
+        if ( $data_val->{_id} =~ qr{^_design/} ) {
+            $self->create_view( $data_val );
+        }
+        else {
+            push @data_val, $data_val;
+            push @id, $data_val->{_id};
+        }
+    }
+    return 1 unless @data_val;
 
-    return $self->create_view( $id, $data_val )
-        if $id =~ qr{^_design/};
-
+    my $pf = join(",", map {"?"} @id);
     my $del_sth = $self->prepare_sql(
-        q{DELETE FROM _MAP_ WHERE id=?}
+        qq{DELETE FROM _MAP_ WHERE id IN ($pf)}
     );
-    $del_sth->execute($id);
+    $del_sth->execute(@id);
 
     my $index_sth = $self->prepare_sql(
         q{INSERT INTO _MAP_ (design_id, id, key, value) VALUES (?,?,?,?)}
@@ -431,13 +484,15 @@ sub update_views {
                 warn $@;
                 next VIEW;
             }
-            $self->_data_to_map({
-                sub       => $sub,
-                id        => $id,
-                data_val  => $data_val,
-                sth       => $index_sth,
-                design_id => "$design_id/$name",
-            });
+            for my $data_val (@data_val) {
+                $self->_data_to_map({
+                    sub       => $sub,
+                    id        => $data_val->{_id},
+                    data_val  => $data_val,
+                    sth       => $index_sth,
+                    design_id => "$design_id/$name",
+                });
+            }
         }
     }
     return 1;

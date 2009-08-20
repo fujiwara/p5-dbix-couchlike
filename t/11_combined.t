@@ -16,7 +16,6 @@ is_deeply( \@v => [
 
 my $p = $couch_p->get('/default');
 $couch_p->put($p);
-
 @v = $couch_p->view('all/list');
 is_deeply( \@v => [
     { 'value' => '1', 'id' => '/default', 'key' => '/default' },
@@ -42,3 +41,4 @@ _END_OF_SQL_
         $dbh->do($sql);
     }
 };
+

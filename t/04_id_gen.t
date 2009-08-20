@@ -9,7 +9,7 @@ isa_ok $gen => "DBIx::CouchLike::IdGenerator";
 ok $gen->can('get_id');
 
 my %id;
-for ( 1 .. 10000 ) {
+for ( 1 .. 2000 ) {
     my $new = $gen->get_id;
     ok $new, "get_id";
     ok !ref $new, "no ref";
