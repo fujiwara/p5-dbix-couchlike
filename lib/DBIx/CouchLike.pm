@@ -531,7 +531,7 @@ __END__
 
 =head1 NAME
 
-DBIx::CouchLike -
+DBIx::CouchLike - DBI based CouchDB like document database library
 
 =head1 SYNOPSIS
 
