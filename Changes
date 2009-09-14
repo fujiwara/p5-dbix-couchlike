@@ -1,5 +1,8 @@
 Revision history for Perl extension DBIx::CouchLike
 
+0.12    Mon Sep 14 14:57:37 2009
+        - added post_with_views(), put_with_views().
+
 0.10    Fri Sep 11 15:35:59 2009
         - release to CPAN
 

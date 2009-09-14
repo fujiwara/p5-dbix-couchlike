@@ -1,5 +1,5 @@
 ---
-abstract: ~
+abstract: 'DBI based CouchDB like document database library'
 author:
   - 'FUJIWARA <fujiwara.shunichiro gmail.com>'
 build_requires:

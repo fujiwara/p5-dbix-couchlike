@@ -8,7 +8,7 @@ use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 
-our $VERSION = '0.10';
+our $VERSION = '0.12';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
 
@@ -137,7 +137,13 @@ sub post {
 }
 
 sub post_multi {
+    my $self = shift;
+    $self->_post_multi([], @_);
+}
+
+sub _post_multi {
     my $self      = shift;
+    my $views     = shift;
     my @value_ref = @_;
     my $sth = $self->prepare_sql(q{INSERT INTO _DATA_ (id, value) VALUES(?, ?)});
     my @id;
@@ -148,7 +154,7 @@ sub post_multi {
         $value_ref->{_id} = $id;
         push @id, $id;
     }
-    $self->update_views( @value_ref );
+    $self->update_views( $views, @value_ref );
     return wantarray ? @id : $id[0];
 }
 
@@ -163,8 +169,22 @@ sub put {
 
 sub put_multi {
     my $self = shift;
+    $self->_put_multi([], @_);
+}
+
+sub put_with_views {
+    my $self  = shift;
+    my @views = map { "_design/$_" } @_;
+    sub {
+        $self->_put_multi(\@views, @_);
+    };
+}
+
+sub _put_multi {
+    my $self      = shift;
+    my $views     = shift;
     my @value_ref = @_;
-    my $sth  = $self->prepare_sql(q{UPDATE _DATA_ SET value=? WHERE id=?});
+    my $sth       = $self->prepare_sql(q{UPDATE _DATA_ SET value=? WHERE id=?});
 
     my @post;
     my @put;
@@ -185,7 +205,7 @@ sub put_multi {
     }
     my @new_id;
     @new_id = $self->post_multi(@post) if @post;
-    $self->update_views(@put);
+    $self->update_views( $views, @put );
     return wantarray ? (@id, @new_id) : $id[0] || $new_id[0];
 }
 
@@ -350,6 +370,14 @@ sub all {
                      : $itr;
 }
 
+sub post_with_views {
+    my $self  = shift;
+    my @views = map { "_design/$_" } @_;
+    sub {
+        $self->_post_multi(\@views, @_);
+    };
+}
+
 sub _start_with {
     my $self  = shift;
     my $sub_class = $self->sub_class;
@@ -438,8 +466,10 @@ sub create_view {
 }
 
 sub update_views {
-    my $self     = shift;
-    my $dbh      = $self->dbh;
+    my $self  = shift;
+    my $dbh   = $self->dbh;
+    my $views = shift || [];
+    my @views = @$views;
 
     my @data_val;
     my @id;
@@ -455,20 +485,44 @@ sub update_views {
     return 1 unless @data_val;
 
     my $pf = join(",", map {"?"} @id);
-    my $del_sth = $self->prepare_sql(
-        qq{DELETE FROM _MAP_ WHERE id IN ($pf)}
-    );
-    $del_sth->execute(@id);
+    my $df = @views ? join(",", map {"?"} @views) : "";
+
+    if (@views) {
+        my $del_sql = qq{DELETE FROM _MAP_ WHERE id IN ($pf)};
+        my @value;
+        my @cond;
+        for my $v (@views) {
+            my ($part, @v) = $self->_start_with( design_id => $v );
+            push @cond,  $part;
+            push @value, @v;
+        }
+        $del_sql .= " AND (" . join(" OR ", @cond). ")";
+        $self->prepare_sql($del_sql)
+            ->execute(@id, @value);
+    }
+    else {
+        $self->prepare_sql(qq{DELETE FROM _MAP_ WHERE id IN ($pf)})
+            ->execute(@id);
+    }
 
     my $index_sth = $self->prepare_sql(
         q{INSERT INTO _MAP_ (design_id, id, key, value) VALUES (?,?,?,?)}
     );
 
-    my ($part, @value) = $self->_start_with( id => '_design/' );
-    my $sth = $self->prepare_sql(
-        q{SELECT id, value FROM _DATA_ WHERE } . $part
-    );
-    $sth->execute(@value);
+    my $sth;
+    if (@views) {
+        $sth = $self->prepare_sql(
+            qq{SELECT id, value FROM _DATA_ WHERE id IN($df)}
+        );
+        $sth->execute(@views);
+    }
+    else {
+        my ($part, @value) = $self->_start_with( id => '_design/' );
+        $sth = $self->prepare_sql(
+            q{SELECT id, value FROM _DATA_ WHERE } . $part
+        );
+        $sth->execute(@value);
+    }
 
  DESIGN:
     while ( my $r = $sth->fetchrow_arrayref ) {
@@ -611,6 +665,10 @@ DBIx::CouchLike - DBI based CouchDB like document database library
   $itr = $couch->view("find/tags");
   $result_1 = $itr->next;
   $result_2 = $itr->next;
+
+  # post / put with specified views
+  $couch->put_with_views("find")->($obj);
+  $couch->post_with_views("foo", "bar")->($obj1, $obj2);
 
 =head1 DESCRIPTION
 
