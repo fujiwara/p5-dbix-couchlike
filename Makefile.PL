@@ -8,6 +8,7 @@ requires
     'UNIVERSAL::require'    => 0,
     'DBI'                   => 1,
     'Class::Accessor::Fast' => 0,
+    'Unicode::RecursiveDowngrade' => 0,
 ;
 
 tests 't/*.t';

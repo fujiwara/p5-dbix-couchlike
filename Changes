@@ -1,5 +1,8 @@
 Revision history for Perl extension DBIx::CouchLike
 
+0.13    Fri Sep 18 01:50:15 2009
+        - requires Unicode::RecursiveDowngrade
+
 0.12    Mon Sep 14 14:57:37 2009
         - added post_with_views(), put_with_views().
 
