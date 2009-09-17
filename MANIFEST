@@ -41,5 +41,6 @@ t/12_reverse.t
 t/13_all.t
 t/14_crud_multi.t
 t/15_view_multi.t
+t/16_view_with.t
 t/connect.pl
-t/test.db
+
