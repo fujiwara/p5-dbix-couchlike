@@ -15,6 +15,7 @@ tests 't/*.t';
 author_tests('xt') if eval { require Module::Install::AuthorTests };
 
 build_requires 'Test::More';
+build_requires 'Test::Exception';
 use_test_base;
 auto_include;
 WriteAll;

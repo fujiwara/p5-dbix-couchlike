@@ -4,6 +4,7 @@ author:
   - 'FUJIWARA <fujiwara.shunichiro gmail.com>'
 build_requires:
   ExtUtils::MakeMaker: 6.42
+  Test::Exception: 0
   Test::More: 0
 configure_requires:
   ExtUtils::MakeMaker: 6.42
@@ -28,4 +29,4 @@ requires:
   Unicode::RecursiveDowngrade: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.13
+version: 0.14

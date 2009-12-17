@@ -7,10 +7,11 @@ use JSON 2.0 ();
 use UNIVERSAL::require;
 use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
+use DBIx::CouchLike::Sth;
 
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 our $RD;
-__PACKAGE__->mk_accessors(qw/ dbh table utf8 _json /);
+__PACKAGE__->mk_accessors(qw/ dbh table utf8 _json trace versioning /);
 
 sub new {
     my $class = shift;
@@ -85,7 +86,7 @@ sub create_table {
     my $sub_class = $self->sub_class;
     eval {
         $sub_class->require;
-        $sub_class->create_table( $self->dbh, $self->table );
+        $sub_class->create_table( $self->dbh, $self->table, $self->{versioning} );
     };
     if ($@) {
         carp( "$@ Unsupported Driver: "
@@ -101,7 +102,11 @@ sub prepare_sql {
     my $sql  = shift;
     $sql =~ s{_DATA_}{ $self->table . "_data" }eg;
     $sql =~ s{_MAP_}{ $self->table . "_map" }eg;
-    return $self->dbh->prepare($sql);
+    return DBIx::CouchLike::Sth->new({
+        trace => $self->{trace},
+        sth   => $self->dbh->prepare($sql),
+        sql   => $sql,
+    });
 }
 
 sub get {
@@ -114,14 +119,18 @@ sub get_multi {
     my $self = shift;
     my @id   = @_;
     my $pf   = join(",", map {"?"} @id);
-    my $sth  = $self->prepare_sql(
-        qq{SELECT id, value FROM _DATA_ WHERE id IN($pf)}
-    );
+
+    my $versioning = $self->{versioning};
+    my $sql  = $versioning
+        ? qq{SELECT id, value, version FROM _DATA_ WHERE id IN($pf)}
+        : qq{SELECT id, value FROM _DATA_ WHERE id IN($pf)};
+    my $sth  = $self->prepare_sql($sql);
     $sth->execute(@id);
     my @res;
     while ( my $r = $sth->fetchrow_arrayref ) {
         my $res = $self->from_json($r->[1]);
-        $res->{_id} = $r->[0];
+        $res->{_id}      = $r->[0];
+        $res->{_version} = $r->[2] if $versioning;
         push @res, $res;
     }
     return wantarray ? @res : $res[0];
@@ -145,13 +154,22 @@ sub _post_multi {
     my $self      = shift;
     my $views     = shift;
     my @value_ref = @_;
-    my $sth = $self->prepare_sql(q{INSERT INTO _DATA_ (id, value) VALUES(?, ?)});
+    my $versioning = $self->{versioning};
+    my $sql = $versioning
+        ? q{INSERT INTO _DATA_ (id, value, version) VALUES(?, ?, ?)}
+        : q{INSERT INTO _DATA_ (id, value) VALUES(?, ?)};
+    my $sth = $self->prepare_sql($sql);
     my @id;
     for my $value_ref (@value_ref) {
-        my $id = delete($value_ref->{_id}) || $self->id_generator->get_id;
-        my $json = $self->to_json($value_ref);
-        $sth->execute( $id, $json );
-        $value_ref->{_id} = $id;
+        my $id      = delete($value_ref->{_id}) || $self->id_generator->get_id;
+        my $version = $versioning ? ( $value_ref->{_version} ||= 0 ) : undef;
+        my $json    = $self->to_json($value_ref);
+        my @param = ($id, $json);
+        push @param, $version if $versioning;
+        $sth->execute(@param);
+
+        $value_ref->{_id}      = $id;
+        $value_ref->{_version} = $version if $versioning;
         push @id, $id;
     }
     $self->update_views( $views, @value_ref );
@@ -184,19 +202,31 @@ sub _put_multi {
     my $self      = shift;
     my $views     = shift;
     my @value_ref = @_;
-    my $sth       = $self->prepare_sql(q{UPDATE _DATA_ SET value=? WHERE id=?});
+    my $versioning = $self->{versioning};
+    my $sql = $versioning
+        ? q{UPDATE _DATA_ SET value=?, version=version+1 WHERE id=? AND version=?}
+        : q{UPDATE _DATA_ SET value=? WHERE id=?};
+    my $sth = $self->prepare_sql($sql);
 
     my @post;
     my @put;
     my @id;
     for my $value_ref (@value_ref) {
-        my $id   = delete $value_ref->{_id};
-        my $json = $self->to_json($value_ref);
+        my $id      = delete $value_ref->{_id};
+        my $json    = $self->to_json($value_ref);
+        my $version = $versioning ? ($value_ref->{_version} ||= 0) : undef;
         $value_ref->{_id} = $id;
 
-        my $r = $sth->execute( $json, $id );
+        my @param = ($json, $id);
+        push @param, $version if $versioning;
+        my $r = $sth->execute(@param);
         if ( $r == 0 ) {
-            push @post, $value_ref;
+            if (defined $version && $versioning) {
+                croak("Can't put id: $id, version: $version");
+            }
+            else {
+                push @post, $value_ref;
+            }
         }
         else {
             push @id,  $id;
@@ -247,7 +277,7 @@ sub view {
     my $sql = q{
         SELECT m.id, m.key, m.value _COL_
         FROM _MAP_ AS m _JOIN_
-        WHERE m.design_id=? };
+        WHERE m.design_id=?};
     if ( exists $query->{key} ) {
         if ( ref $query->{key} eq 'ARRAY' ) {
             $sql .= " AND m.key IN ("

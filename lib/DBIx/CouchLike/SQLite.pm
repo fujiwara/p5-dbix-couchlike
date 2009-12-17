@@ -10,11 +10,18 @@ my @sql_format = (
     q|CREATE INDEX %s_map_idx  ON %s_map (design_id, key)|,
 );
 
+my @sql_format_v = (
+    q|CREATE TABLE IF NOT EXISTS %s_data (id text not null primary key, value text, version integer not null default 0)|,
+    q|CREATE TABLE IF NOT EXISTS %s_map (design_id text not null, id text not null, key text not null, value text)|,
+    q|CREATE INDEX %s_map_idx  ON %s_map (design_id, key)|,
+);
+
 sub create_table {
     my $class = shift;
     my $dbh   = shift;
     my $name  = shift;
-    for my $f (@sql_format) {
+    my $v     = shift;
+    for my $f ( $v ? @sql_format_v : @sql_format ) {
         $dbh->do( sprintf $f, $name, $name );
     }
 }
