@@ -213,16 +213,17 @@ sub _put_multi {
     my @put;
     my @id;
     for my $value_ref (@value_ref) {
-        my $id      = delete $value_ref->{_id};
-        my $json    = $self->to_json($value_ref);
+        my $id      = delete  $value_ref->{_id};
+        my $put     = defined $value_ref->{_version};
         my $version = $versioning ? ($value_ref->{_version} ||= 0) : undef;
-        $value_ref->{_id} = $id;
+        my $json    = $self->to_json($value_ref);
 
+        $value_ref->{_id} = $id;
         my @param = ($json, $id);
         push @param, $version if $versioning;
         my $r = $sth->execute(@param);
         if ( $r == 0 ) {
-            if (defined $version && $versioning) {
+            if ($versioning && $put) {
                 croak("Can't put id: $id, version: $version");
             }
             else {
