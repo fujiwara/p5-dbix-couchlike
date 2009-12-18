@@ -1,4 +1,5 @@
 use strict;
-use Test::More qw/ no_plan /;
+use Test::More;
 use Test::Exception;
 BEGIN { use_ok 'DBIx::CouchLike' }
+done_testing;
