@@ -3,15 +3,16 @@ package DBIx::CouchLike::Sth;
 use strict;
 use warnings;
 use base qw/ Class::Accessor::Fast /;
-__PACKAGE__->mk_accessors(qw/ sth sql trace /);
+__PACKAGE__->mk_accessors(qw/ sth sql trace quote /);
 
 sub execute {
     my $self = shift;
 
     if ( my $h = $self->{trace} ) {
-        print $h "---------------------------\n";
-        print $h "$self->{sql}\n->execute(@_)\n";
-        print $h "---------------------------\n";
+        my @params = map { $self->{quote}->($_) } @_;
+        my $sql    = $self->{sql};
+        $sql =~ s/\?/shift @params/eg;
+        print $h "TRACE >> $sql\n";
     }
     $self->{sth}->execute(@_);
 }

@@ -106,6 +106,7 @@ sub prepare_sql {
         trace => $self->{trace},
         sth   => $self->dbh->prepare($sql),
         sql   => $sql,
+        quote => $self->{trace} ? sub { $self->dbh->quote($_[0]) } : undef,
     });
 }
 
