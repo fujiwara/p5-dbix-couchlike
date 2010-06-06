@@ -1,6 +1,6 @@
 # -*- mode:perl -*-
 use strict;
-use Test::More;
+use Test::More qw/ no_plan /;
 use Test::Exception;
 BEGIN { use_ok 'DBIx::CouchLike' }
 
@@ -176,4 +176,3 @@ is_deeply $res => undef;
 $dbh->commit unless $ENV{DSN};
 $dbh->disconnect;
 
-done_testing;

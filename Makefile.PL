@@ -16,8 +16,6 @@ author_tests('xt') if eval { require Module::Install::AuthorTests };
 
 build_requires 'Test::More' => "0.87_01";
 build_requires 'Test::Exception';
-test_requires 'Test::Requires';
-
 use_test_base;
 auto_include;
 WriteAll;

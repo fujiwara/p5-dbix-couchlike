@@ -1,6 +1,6 @@
 # -*- mode:perl -*-
 use strict;
-use Test::More;
+use Test::More qw/ no_plan /;
 use Test::Exception;
 BEGIN { use_ok 'DBIx::CouchLike' }
 
@@ -12,6 +12,12 @@ isa_ok $couch => "DBIx::CouchLike";
 ok $couch->can('dbh');
 is $couch->dbh => $dbh;
 ok $couch->dbh->ping;
+my $trace;
+if ($ENV{TRACE}) {
+    use IO::Scalar;
+    $couch->{trace} = IO::Scalar->new(\$trace);
+}
+$couch->versioning( $ENV{VERSIONING} );
 
 is $couch->table => "foo";
 ok $couch->create_table;
@@ -97,4 +103,4 @@ is_deeply \@all => [
 $dbh->commit unless $ENV{DSN};
 $dbh->disconnect;
 
-done_testing;
+diag($trace);

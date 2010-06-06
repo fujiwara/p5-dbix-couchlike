@@ -1,6 +1,6 @@
 # -*- mode:perl -*-
 use strict;
-use Test::More;
+use Test::More qw/ no_plan /;
 use Test::Exception;
 BEGIN { use_ok 'DBIx::CouchLike' }
 
@@ -42,4 +42,3 @@ _END_OF_SQL_
     }
 };
 
-done_testing;

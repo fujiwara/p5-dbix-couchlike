@@ -1,6 +1,6 @@
 # -*- mode:perl -*-
 use strict;
-use Test::More;
+use Test::More qw/ no_plan /;
 use Test::Exception;
 BEGIN { use_ok 'DBIx::CouchLike' }
 
@@ -62,7 +62,7 @@ is_deeply $obj => { foo => 1, bar => 2, _id => "9999", _version => 0 };
 $couch->trace(undef);
 
 # put with id (not exists)
-$id = $couch->put({ _id => 1234, foo => 9999 });
+$id = $couch->post({ _id => 1234, foo => 9999 });
 is $id => 1234;
 $obj = $couch->get(1234);
 is_deeply $obj => { _id => 1234, foo => 9999, _version => 0 };
@@ -104,4 +104,3 @@ is_deeply \@all => [
 $dbh->commit unless $ENV{DSN};
 $dbh->disconnect;
 
-done_testing;

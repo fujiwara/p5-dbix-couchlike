@@ -1,6 +1,6 @@
 # -*- mode:perl -*-
 use strict;
-use Test::More;
+use Test::More qw/ no_plan /;
 use Test::Exception;
 BEGIN { use_ok 'DBIx::CouchLike::IdGenerator' }
 
@@ -16,5 +16,3 @@ for ( 1 .. 2000 ) {
     ok !$id{$new}, "got_id is not exists";
     $id{$new} = 1;
 }
-
-done_testing;

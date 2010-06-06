@@ -47,4 +47,3 @@ t/16_view_with.t
 t/21_versioning_crud.t
 t/22_versioning_conflict.t
 t/connect.pl
-
