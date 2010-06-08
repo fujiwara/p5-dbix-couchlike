@@ -2,6 +2,7 @@
 use strict;
 use Test::More qw/ no_plan /;
 use Test::Exception;
+use Test::Requires qw/ DBD::SQLite /;
 use Benchmark qw/ :all /;
 BEGIN { use_ok 'DBIx::CouchLike' }
 

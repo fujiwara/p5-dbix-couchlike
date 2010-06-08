@@ -1,7 +1,8 @@
 # -*- mode:perl -*-
 use strict;
 use Test::More qw/ no_plan /;
-use Test::Exception;
+
+use Test::Requires qw/ DBD::SQLite /;
 use Data::Dumper;
 BEGIN { use_ok 'DBIx::CouchLike' }
 

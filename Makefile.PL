@@ -14,8 +14,8 @@ requires
 tests 't/*.t';
 author_tests('xt') if eval { require Module::Install::AuthorTests };
 
-build_requires 'Test::More' => "0.87_01";
-build_requires 'Test::Exception';
-use_test_base;
+test_requires 'Test::More' => "0.87_01";
+test_requires 'Test::Requires';
+
 auto_include;
 WriteAll;

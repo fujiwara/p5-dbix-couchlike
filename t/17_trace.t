@@ -1,8 +1,8 @@
 # -*- mode:perl -*-
 use strict;
 use Test::More;
-use Test::Exception;
-use Test::Requires qw/ IO::Scalar /;
+
+use Test::Requires qw/ DBD::SQLite IO::Scalar /;
 BEGIN {
     use_ok 'DBIx::CouchLike';
 }

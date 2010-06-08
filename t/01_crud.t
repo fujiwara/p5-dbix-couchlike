@@ -1,7 +1,7 @@
 # -*- mode:perl -*-
 use strict;
 use Test::More qw/ no_plan /;
-use Test::Exception;
+use Test::Requires qw/ DBD::SQLite /;
 BEGIN { use_ok 'DBIx::CouchLike' }
 
 my $dbh = require 't/connect.pl';
@@ -14,7 +14,7 @@ is $couch->dbh => $dbh;
 ok $couch->dbh->ping;
 my $trace;
 if ($ENV{TRACE}) {
-    use IO::Scalar;
+    require IO::Scalar;
     $couch->{trace} = IO::Scalar->new(\$trace);
 }
 $couch->versioning( $ENV{VERSIONING} );
@@ -49,10 +49,10 @@ ok $couch->delete($id);
 ok ! $couch->get($id);
 
 ok $couch->post( "foo" => { a => "AAA" } );
-throws_ok {
+eval {
     $couch->post( "foo" => { a => "AAA" } )
-} qr/(?:duplicate key value|is not unique)/;
-
+};
+ok $@ && $@ =~ qr/(?:duplicate key value|is not unique)/;
 
 # post with id
 $id = $couch->post({ _id => "9999", foo => 1, bar => 2 });

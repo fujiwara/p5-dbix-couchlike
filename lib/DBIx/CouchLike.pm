@@ -1,5 +1,6 @@
 package DBIx::CouchLike;
 
+use 5.8.1;
 use strict;
 use warnings;
 use Carp;
@@ -9,7 +10,7 @@ use base qw/ Class::Accessor::Fast /;
 use DBIx::CouchLike::Iterator;
 use DBIx::CouchLike::Sth;
 
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 our $RD;
 __PACKAGE__->mk_accessors(qw/ dbh table utf8 _json trace versioning /);
 

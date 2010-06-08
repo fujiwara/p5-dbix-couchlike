@@ -1,7 +1,8 @@
 # -*- mode:perl -*-
 use strict;
 use Test::More qw/ no_plan /;
-use Test::Exception;
+
+use Test::Requires qw/ DBD::SQLite /;
 BEGIN { use_ok 'DBIx::CouchLike' }
 
 my $dbh = require 't/connect.pl';
@@ -25,7 +26,10 @@ ok $obj;
 is_deeply $obj => { foo => 1, bar => 2, _id => $id, _version => 0 };
 
 ok $couch->put({ %$obj, baz => 3 });
-throws_ok { $couch->put($obj) } qr/Can't put/;
+eval {
+    $couch->put($obj);
+};
+ok $@ && $@ =~ qr/Can't put/;
 
 $obj = $couch->get($id);
 is_deeply $obj => { foo => 1, bar => 2, baz => 3, _id => $id, _version => 1 };
